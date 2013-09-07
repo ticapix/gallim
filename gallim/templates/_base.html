@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+    	<title>{% block title %}Gallim: Image Gallery with Tornado{% end %}</title>
+      	<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.0.3.min.js"></script>
+  		<link rel="stylesheet" href="{{ static_url('_base.css') }}" />
+	  </head>
+  	<body>
+  	<ul id="base_message"></ul>
+  	<script>
+  		function base_display_message(msg_class, msg) {
+  			var msg_id = 'msg_' + new Date().getTime()
+  			$('#base_message').append("<li id='" + msg_id + "' onclick='javascript:$(\"#" + msg_id + "\").remove()'><span class='msg_" + msg_class + "'>" + msg + "</span></li>")
+  			if (msg_class != 'error')
+			  	setTimeout(function() {$('#' + msg_id).remove()}, 5 * 1000)
+  		}
+
+  		function base_display_info(msg) {
+  			base_display_message('info', msg)
+  		}
+
+  		function base_display_error(msg) {
+  			base_display_message('error', msg)
+  		}
+
+		$(document).ajaxError(function(event, jqxhr, settings) {
+			var timestamp = new Date(event.timeStamp)
+			var err = timestamp + ' ' + settings.type + ' ' + settings.url + ': ' + jqxhr.responseText
+			base_display_error(err)
+		})
+
+		function base_array2dict (arr) {
+			var map = {}
+			for (var idx in arr) {
+				if (map.hasOwnProperty(arr[idx].name)) {
+					if (_is_array(map[arr[idx].name])) {
+						map[arr[idx].name].push(arr[idx].value)
+					} else {
+						var a = new Array()
+						a.push(map[arr[idx].name])
+						a.push(arr[idx].value)
+						map[arr[idx].name] = a
+					}
+				} else {
+					map[arr[idx].name] = arr[idx].value
+				}
+			}
+			return map
+		}
+
+		function _is_array(obj) {
+    		return Object.prototype.toString.call(obj) === "[object Array]";
+		}
+
+		function _is_dict(obj) {
+    		return Object.prototype.toString.call(obj) === "[object Object]";
+		}
+
+		function _is_string(obj) {
+    		return Object.prototype.toString.call(obj) === "[object String]";
+		}
+
+		function _is_number(obj) {
+    		return Object.prototype.toString.call(obj) === "[object Number]";
+		}
+
+		function _is_boolean(obj) {
+    		return Object.prototype.toString.call(obj) === "[object Boolean]";
+		}
+
+		function _is_null(obj) {
+    		return Object.prototype.toString.call(obj) === "[object Null]";
+		}
+
+		function _html_ident(level) {
+			var ans = ''
+			for (var i = 0; i < level; ++i)
+				ans += '&nbsp;&nbsp;&nbsp;&nbsp;'
+			return ans
+		}
+
+		function base_json2html_replacer(key, value, level) {
+			level = typeof level !== 'undefined' ? level : 1;
+			var ans = ''
+			if (_is_dict(value)) {
+				var elts = new Array()
+				for (var property in value) {
+					if (value.hasOwnProperty(property)) {
+						elts.push(_html_ident(level) + '<span style=\'color: #204A87;\'>&quot;' + property + '&quot;</span>: ' + base_json2html_replacer(property, value[property], level+1))
+					}
+				}
+				if (elts.length > 0)
+					ans = '{<br/>' + elts.join(',<br/>') + '<br/>' + _html_ident(level-1) + '}'
+				else
+					ans = '{}'
+			} else if (_is_array(value)) {
+				var elts = new Array()
+				for (var idx in value) {
+					elts.push(_html_ident(level) + base_json2html_replacer(idx, value[idx], level+1))
+				}
+				if (elts.length > 0)
+					ans = '[<br/>' + elts.join(',<br/>') + '<br/>' + _html_ident(level-1) + ']'
+				else
+					ans = '[]'
+			} else if (_is_string(value)) {
+				ans = '<span style=\'color: #4E9A06;\'>&quot;' + value + '&quot;</span>'
+			} else if (_is_null(value)) {
+				ans = '<span style=\'color: #BABDB6;\'>' + value + '</span>'
+			} else if (_is_boolean(value)) {
+				ans = '<span style=\'color: #C4A000;\'>' + value + '</span>'
+			} else if (_is_number(value)) {
+				ans = '<span style=\'color: #AD7FA8;\'>' + value + '</span>'
+			} else {
+				console.log("ERROR: unknown type " + Object.prototype.toString.call(value))
+			}
+			return ans;
+		}
+
+		function base_json2html(obj) {
+			var ans = JSON.stringify(obj , base_json2html_replacer)
+			return eval(ans)
+		}
+
+		function _text_ident(level) {
+			var ans = ''
+			for (var i = 0; i < level; ++i)
+				ans += '    '
+			return ans
+		}
+
+		function base_json2text_replacer(key, value, level) {
+			level = typeof level !== 'undefined' ? level : 1;
+			var ans = ''
+			if (_is_dict(value)) {
+				var elts = new Array()
+				for (var property in value) {
+					if (value.hasOwnProperty(property)) {
+						elts.push(_text_ident(level) + '"' + property + '": ' + base_json2text_replacer(property, value[property], level+1))
+					}
+				}
+				if (elts.length > 0)
+					ans = '{\n' + elts.join(',\n') + '\n' + _text_ident(level-1) + '}'
+				else
+					ans = '{}'
+			} else if (_is_array(value)) {
+				var elts = new Array()
+				for (var idx in value) {
+					elts.push(_text_ident(level) + base_json2text_replacer(idx, value[idx], level+1))
+				}
+				if (elts.length > 0)
+					ans = '[\n' + elts.join(',\n') + '\n' + _text_ident(level-1) + ']'
+				else
+					ans = '[]'
+			} else if (_is_string(value)) {
+				ans = '"' + value + '"'
+			} else if (_is_null(value)) {
+				ans = value
+			} else if (_is_boolean(value)) {
+				ans = value
+			} else if (_is_number(value)) {
+				ans = value
+			} else {
+				console.log("ERROR: unknown type " + Object.prototype.toString.call(value))
+			}
+			return ans;
+		}
+
+		function base_json2text(obj) {
+			var ans = JSON.stringify(obj , base_json2text_replacer)
+			return eval(ans)
+		}
+
+  	</script>
+  	<h1><a href="{{ reverse_url('html', 'main') }}">{{ gallery_title }}</a></h1>
+  	{% block body %}{% end %}
+  	</body>
+</html>

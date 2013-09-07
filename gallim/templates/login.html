@@ -1,0 +1,44 @@
+{% extends "_base.html" %}
+
+{% block title %} {{ gallery_title }} - Login{% end %}
+
+{% block body %}
+
+{% import urllib.parse %}
+{% import uuid %}
+{% set uuuid = uuid.uuid4().hex %}
+
+<h2>Please login</h2>
+<table style="width: 100%;">
+    <tr>
+        <td style="text-align:center;"><a href="javascript:login_facebook('{{ reverse_url('auth.facebook', uuuid) }}')">Facebook</a></td>
+        <td style="text-align:center;"><a href="{{ reverse_url('auth.google') }}">Google</a></td>
+    </tr>
+</table>
+
+<script>
+function login_facebook(auth_facebook) {
+    var uuid = '{{ uuuid }}'
+    var sse = new EventSource("{{ reverse_url('auth.fb_reverse', 'listen/%s' % uuuid) }}")
+
+    sse.onmessage = function(evt) { 
+    	console.log(evt.data)
+        this.close()
+        var back_location = evt.data
+        window.location.assign(eval(back_location))
+    }
+
+    sse.onopen = function(evt) {
+        console.log('sse open ' + evt.data)
+    }
+
+    sse.onerror = function(evt) {
+    	console.log('sse error ' + evt.data)
+        this.close()
+    }
+
+    window.open(auth_facebook);
+}
+
+</script>
+{% end %}
