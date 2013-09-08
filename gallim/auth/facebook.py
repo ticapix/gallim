@@ -55,8 +55,8 @@ class FacebookGraphLoginHandler(BaseHandler, tornado.auth.FacebookGraphMixin):
     @tornado.gen.coroutine
     def get(self, reverse_session_id):
         if 'error_code' in self.request.arguments:
-            raise tornado.web.HTTPError(410, tornado.escape.json_encode({'error_code': self.request.arguments['error_code'],
-                                                                         'error_message': self.request.arguments['error_message']}))
+            raise tornado.web.HTTPError(410, tornado.escape.json_encode({'error_code': self.request.arguments['error_code'][0].decode('utf-8'),
+                                                                         'error_message': self.request.arguments['error_message'][0].decode('utf-8')}))
 
         if 'protocol' not in self.request.headers:
             logger.warning('could not found header "protocol". Using http by default')
@@ -81,7 +81,10 @@ class FacebookGraphLoginHandler(BaseHandler, tornado.auth.FacebookGraphMixin):
                                                      extra_fields=['email'],
                                                      )
             logger.debug("received user %s" % user)
-            self.set_secure_cookie("gallim_user", json.dumps(dict([[k, user[k]] for k in ["name", "locale", "email"]])))
+            if user is not None:
+                self.set_secure_cookie("gallim_user", json.dumps(dict([[k, user[k]] for k in ["name", "locale", "email"]])))
+            else:
+                logger.info("registration failed")
             self.redirect(self.get_argument("next", self.reverse_url('html', 'main')))
         else:
             yield self.authorize_redirect(redirect_uri=redirect_uri,
