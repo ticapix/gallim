@@ -12,7 +12,7 @@ import tornado.web
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import gallim.auth
-import gallim.shared
+from gallim.shared import BaseHandler
 
 tornado.options.define('conf', default=os.path.join(os.path.dirname(__file__), 'config.conf'), help='User configuration')
 tornado.options.define('port', default=8000, help='TCP port to listen')
@@ -26,7 +26,7 @@ tornado.options.define('static_path', default=os.path.join(os.path.dirname(__fil
 logger = logging.getLogger("tornado.application")
 
 
-class HtmlTemplateHandler(gallim.shared.BaseHandler):
+class HtmlTemplateHandler(BaseHandler):
     def prepare(self):
         self.tpl_vars = {}
         for config_name, value in tornado.options.options.as_dict().items():
@@ -44,7 +44,7 @@ class HtmlTemplateHandler(gallim.shared.BaseHandler):
         self.render("%s.html" % template_name, **self.tpl_vars)
 
 
-class PublicHtmlTemplateHandler(gallim.shared.BaseHandler):
+class PublicHtmlTemplateHandler(BaseHandler):
     public_pages = ['login', 'logout']
 
     def prepare(self):
@@ -62,6 +62,11 @@ class PublicHtmlTemplateHandler(gallim.shared.BaseHandler):
         self.tpl_vars.update(self.request.arguments)
         self.render("%s.html" % template_name, **self.tpl_vars)
 
+class LogoutHandler(BaseHandler):
+    def get(self):
+        self.clear_cookie("gallim_user")
+
+        self.redirect(self.request.headers.get('referer'))
 
 def setup_application( **kwargs):
     cookie_secret = hashlib.md5()
@@ -77,6 +82,7 @@ def setup_application( **kwargs):
     routes = [
               tornado.web.URLSpec(r'/public/html/(?P<template_name>\w+)', PublicHtmlTemplateHandler, name='public_html'),
               tornado.web.URLSpec(r'/html/(?P<template_name>\w+)', HtmlTemplateHandler, name='html'),
+              tornado.web.URLSpec(r'/logout/?', LogoutHandler),
               tornado.web.URLSpec(r'/?', HtmlTemplateHandler),
               ]
     routes.extend(gallim.auth.routes)

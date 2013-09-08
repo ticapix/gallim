@@ -21,7 +21,6 @@ class BaseHandler(tornado.web.RequestHandler):
         msg = "error %s" % exc_value
         if exc_type == tornado.web.HTTPError:
             msg = "%s" % exc_value.log_message
-#            msg += "%s" % ''.join(traceback.format_tb(exc_traceback))
         if self.application.settings.get('debug', False):
             self.write(msg)  # return custom error message in the body
 
@@ -50,41 +49,31 @@ class ListennerSSEHandler(SSEHandler):
 
     @tornado.web.asynchronous
     def get(self, endpoint_id):
-        print('SSE', self.request)
         if endpoint_id in self._endpoints:
-            raise tornado.web.HTTPError(400, "%s is already listenning; overwritting" % endpoint_id)
+            raise tornado.web.HTTPError(400, "%s is already listenning" % endpoint_id)
+        if 'referer' not in self.request.headers:
+            raise tornado.web.HTTPError(400, "missing header 'Referer'")
         self._endpoint_id = endpoint_id
-        self._endpoints[endpoint_id] = [self.emit, self.request.headers.get('referer'), self.finish]
+        self._endpoints[endpoint_id] = [self.request.headers['referer']]
         logger.debug("adding listenner %s" % self._endpoint_id)
 
     def on_connection_close(self):
         logger.debug("deleting listenner %s" % self._endpoint_id)
         del self._endpoints[self._endpoint_id]
-        
+
 
 class ForwardHandler(BaseHandler):
     def initialize(self, endpoints):
         super().initialize()
         self._endpoints = endpoints
 
-#    @tornado.web.asynchronous
     def get(self, endpoint_id):
-        print('FW', self.request)
         if endpoint_id not in self._endpoints:
             raise tornado.web.HTTPError(400, "unknown listenner %s" % endpoint_id)
-
-        referer = self._endpoints[endpoint_id][1]
+        referer = self._endpoints[endpoint_id][0]
         redirect = referer + self.request.uri[len(endpoint_id)+1:]
-        print(referer)
-#         print(uri)
-        self._endpoints[endpoint_id][0](self.request.uri[len(endpoint_id)+1:])
-#        self._endpoints[endpoint_id][2]()
-#        if 'Referer' in self.request.headers:
-#            self.redirect(self.request.headers['Referer'])
-#        print('redirecting to %s' % redirect)
-#        self.set_header('referer2', referer)
+        logger.debug("%s forwarding to %s" % (endpoint_id, referer))
         self.redirect(redirect)
-#        self.finish("close me")
 
 
 
