@@ -3,6 +3,8 @@
 import tornado.web
 import json
 import logging
+import os
+import tornado.autoreload
 import tornado.options
 import tornado.httpserver
 import tornado.ioloop
@@ -11,6 +13,7 @@ import traceback
 logger = logging.getLogger("tornado.application")
 
 tornado.options.define('port', default=8001, help='TCP port to listen')
+tornado.options.define('conf', default=os.path.join(os.path.dirname(__file__), 'config.conf'), help='User configuration')
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -79,7 +82,9 @@ class ForwardHandler(BaseHandler):
 
 def setup_application(**kwargs):
     endpoints = {}
-    settings = {}
+    settings = {
+                "debug": True if tornado.options.options.logging == 'debug' else False
+                }
     settings.update(kwargs)
     routes = [
               tornado.web.URLSpec(r'/listen/(?P<endpoint_id>\w+)', ListennerSSEHandler, {'endpoints': endpoints}),
@@ -92,8 +97,10 @@ def setup_application(**kwargs):
 
 if __name__ == '__main__':
     tornado.options.parse_command_line()
-    logging.getLogger("tornado.application").setLevel(logging.DEBUG)
-    application = setup_application(debug=True)
+    if os.path.isfile(tornado.options.options.conf):
+        tornado.autoreload.watch(tornado.options.options.conf)
+        tornado.options.parse_config_file(tornado.options.options.conf)
+    application = setup_application()
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(tornado.options.options.port)
     tornado.ioloop.IOLoop.instance().start()
