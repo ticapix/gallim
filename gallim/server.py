@@ -22,6 +22,7 @@ tornado.options.define('facebook_api_key', default=194190347420031, help='Gallim
 tornado.options.define('facebook_secret', default='bf737edba5ad9761d625335eca101d40', help='Gallim FB app secret')
 tornado.options.define('template_path', default=os.path.join(os.path.dirname(__file__), 'templates'), help='HTML template directory')
 tornado.options.define('static_path', default=os.path.join(os.path.dirname(__file__), 'static'), help='static file directory (.css, images, .js, ...)')
+tornado.options.define('admin', default='', help='The admin email')
 
 logger = logging.getLogger("tornado.application")
 
@@ -32,6 +33,7 @@ class HtmlTemplateHandler(BaseHandler):
         for config_name, value in tornado.options.options.as_dict().items():
             if config_name.startswith('template_'):
                 self.tpl_vars[config_name[len('template_'):]] = value
+        self.tpl_vars.update({'user': self.get_current_user()})
 
     @tornado.web.authenticated
     @tornado.gen.coroutine
@@ -45,13 +47,14 @@ class HtmlTemplateHandler(BaseHandler):
 
 
 class PublicHtmlTemplateHandler(BaseHandler):
-    public_pages = ['login', 'logout']
+    public_pages = ['login']
 
     def prepare(self):
         self.tpl_vars = {}
         for config_name, value in tornado.options.options.as_dict().items():
             if config_name.startswith('template_'):
                 self.tpl_vars[config_name[len('template_'):]] = value
+        self.tpl_vars.update({'user': self.get_current_user()})
 
     @tornado.gen.coroutine
     def get(self, template_name=None):
@@ -65,7 +68,6 @@ class PublicHtmlTemplateHandler(BaseHandler):
 class LogoutHandler(BaseHandler):
     def get(self):
         self.clear_cookie("gallim_user")
-
         self.redirect(self.request.headers.get('referer'))
 
 def setup_application( **kwargs):

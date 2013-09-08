@@ -17,7 +17,6 @@ class BaseHandler(tornado.web.RequestHandler):
 
     def get_current_user(self):
         user_json = self.get_secure_cookie("gallim_user")
-        print("user_json", user_json)
         if not user_json: return None
         return tornado.escape.json_decode(user_json)
 

@@ -4,11 +4,17 @@
 
 {% block body %}
 
-<h2>Please login</h2>
+<h2>Login</h2>
+<p>
+Gallim doesn't require you to have another account.<br/>
+</p>
+<p>
+Choose one of the service below to log in
+</p>
 <table style="width: 100%;">
     <tr>
-        <td style="text-align:center;"><a href="{{ reverse_url('auth.facebook', '') }}">Facebook</a></td>
-        <td style="text-align:center;"><a href="{{ reverse_url('auth.google') }}">Google</a></td>
+        <td style="text-align:center;"><a href="{{ reverse_url('auth.facebook', '') }}"><img src="{{ static_url('auth/FB-f-Logo__blue_50.png') }}" alt="Facebook"></a></td>
+        <td style="text-align:center;"><a href="{{ reverse_url('auth.google') }}"><img src="{{ static_url('auth/google_logo_41.png') }}" alt="Facebook"></a></a></td>
     </tr>
 </table>
 
