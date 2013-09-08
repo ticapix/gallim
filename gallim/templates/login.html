@@ -11,7 +11,7 @@
 <h2>Please login</h2>
 <table style="width: 100%;">
     <tr>
-        <td style="text-align:center;"><a href="javascript:login_facebook('{{ reverse_url('auth.facebook', uuuid) }}')">Facebook</a></td>
+        <td style="text-align:center;"><a href="{{ reverse_url('auth.facebook', uuuid) }}">Facebook</a></td>
         <td style="text-align:center;"><a href="{{ reverse_url('auth.google') }}">Google</a></td>
     </tr>
 </table>

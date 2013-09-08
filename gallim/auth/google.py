@@ -1,9 +1,9 @@
 import tornado.auth
 import tornado.gen
-import tornado.web
 
+from gallim.shared import BaseHandler
 
-class GoogleLoginHandler(tornado.web.RequestHandler, tornado.auth.GoogleMixin):
+class GoogleLoginHandler(BaseHandler, tornado.auth.GoogleMixin):
     @tornado.gen.coroutine
     def get(self):
         if self.get_argument("openid.mode", None):

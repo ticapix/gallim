@@ -50,10 +50,11 @@ class ListennerSSEHandler(SSEHandler):
 
     @tornado.web.asynchronous
     def get(self, endpoint_id):
+        print('SSE', self.request)
         if endpoint_id in self._endpoints:
             raise tornado.web.HTTPError(400, "%s is already listenning; overwritting" % endpoint_id)
         self._endpoint_id = endpoint_id
-        self._endpoints[endpoint_id] = self.emit
+        self._endpoints[endpoint_id] = [self.emit, self.request.headers.get('referer'), self.finish]
         logger.debug("adding listenner %s" % self._endpoint_id)
 
     def on_connection_close(self):
@@ -66,15 +67,24 @@ class ForwardHandler(BaseHandler):
         super().initialize()
         self._endpoints = endpoints
 
-    @tornado.web.asynchronous
+#    @tornado.web.asynchronous
     def get(self, endpoint_id):
-        print(self.request)
+        print('FW', self.request)
         if endpoint_id not in self._endpoints:
             raise tornado.web.HTTPError(400, "unknown listenner %s" % endpoint_id)
-        self._endpoints[endpoint_id](self.request.uri[len(endpoint_id)+1:])
+
+        referer = self._endpoints[endpoint_id][1]
+        redirect = referer + self.request.uri[len(endpoint_id)+1:]
+        print(referer)
+#         print(uri)
+        self._endpoints[endpoint_id][0](self.request.uri[len(endpoint_id)+1:])
+#        self._endpoints[endpoint_id][2]()
 #        if 'Referer' in self.request.headers:
 #            self.redirect(self.request.headers['Referer'])
-        self.finish("close me")
+#        print('redirecting to %s' % redirect)
+#        self.set_header('referer2', referer)
+        self.redirect(redirect)
+#        self.finish("close me")
 
 
 
